@@ -1,0 +1,39 @@
+Hi Gents,
+
+The link below contains the newest Build and Remove scripts.
+
+ftp://vrsa.na.rsa.net/public/vSpecialists/Scripts/Latest/
+
+Many, many thanks to Alan for adding a bunch of cool code to the build script. Here's what they do.
+
+Build-VMs-V4.PS1
+
+To change the number of VM's you want to create, modify the variable $num_vms_total to the number you want. Example:
+$num_vms_total = 4
+
+To change the prefix name of the VM, change:
+$vm_prefix = "DEMO_VM_"
+
+To change the Template prefix, change:
+$Template_prefix = "tiny-ds-"
+
+You can also change the vCenter you want to run on
+$vchost = "10.5.103.185"
+
+The script, when fired will do the following:
+
+1. Log into vCenter
+2. Find all the Templates based on the prefix
+3. Find all the datastores those Templates live on
+4. Find all the hosts
+5. Divide the number of VM's by the number of hosts. That's how many VM's get created per host
+6. Find the host will the least number of VM's and during each creation, ensure it's on that host.
+7. Find the datastore with the least VM's and during each creation, ensure it's on that datastore.
+8. It will build a hash table and create the VM's asyncronously. (ie: Start the creation task and get on to the next one, quickly!)
+9. More code will use this hash table to check if a VM creation has completed and will Start the VM when done.
+
+The other script is Remove-VMs-V4.PS1.
+
+This script is like the one above, with similar variables as below:
+$vchost = "10.5.103.185"
+$vm_prefix = "DEMO_VM_"

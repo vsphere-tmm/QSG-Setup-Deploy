@@ -1,0 +1,12 @@
+<SnapIn>
+  <Workflows>
+    <Workflow>
+      <Path>C:\Users\Mike\Documents\PowerWF Studio\Workflows\buildvms\buildvms.xoml</Path>
+      <Verb>Start</Verb>
+      <Name>buildvms</Name>
+      <Class>buildvms</Class>
+      <Private>False</Private>
+      <VerbType>Lifecycle</VerbType>
+    </Workflow>
+  </Workflows>
+</SnapIn>
