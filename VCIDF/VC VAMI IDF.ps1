@@ -16,7 +16,7 @@ $adfsSpec = @{
         "users_base_dn" = "CN=Users,DC=pslabs,DC=eng,DC=vmware,DC=com";
         "groups_base_dn" = "DC=pslabs,DC=eng,DC=vmware,DC=com";
         "user_name" = "CN=Federation Test User,CN=Users,DC=pslabs,DC=eng,DC=vmware,DC=com";
-        "password" = "Admin!23";
+        "password" = "VMWare1!";
         "server_endpoints" = @( "ldaps://psqe-dns01.pslabs.eng.vmware.com:636", "ldaps://psqe-dns02.pslabs.eng.vmware.com:636");
         "cert_chain" = @{
             "cert_chain" = @(
