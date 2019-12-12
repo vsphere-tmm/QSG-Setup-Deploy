@@ -34,11 +34,13 @@ $redirect2 = "https://$vcname/ui/login/oauth2/authcode"
 
 # The following are the AD over LDAP settings:
 $users_base_dn = "CN=Users,DC=lab1,DC=local"
-$groups_base_dn = "CN=Users,DC=lab1,DC=local"
+$groups_base_dn = "DC=lab1,DC=local"
 $adusername = "CN=Administrator,CN=Users,DC=lab1,DC=local"
-$adpassword = VMware1!
+[VMware.VimAutomation.Cis.Core.Types.V1.Secret]$adpassword = "VMware1!"
 $CISserverUsername = "administrator@vsphere.local"
+#Turn this into a secure string
 $CISserverPassword = "VMware1!"
+#$CISserverPassword = $PlainCISserverPassword |ConvertTo-SecureString -AsPlainText -Force
 $server_endpoint1 = "ldap://mgt-dc-01.lab1.local:389"
 #$server_endpoint2 = "ldaps://FQDN2:636"
 $cert_chain = ""
@@ -46,16 +48,17 @@ $cert_chain = ""
 #                "-----BEGIN CERTIFICATE-----....",
 #                "-----BEGIN CERTIFICATE-----...."
 
-#Connect to VAMI REST API
-Connect-CisServer -server $vcname -User $CISserverUsername -Password $CISserverPassword -Force
 
-
+Write-Output "Configuring ADFS"
 
 #Create the new Application Group in ADFS
 New-AdfsApplicationGroup -Name $ClientRoleIdentifier -ApplicationGroupIdentifier $ClientRoleIdentifier
 
 #Create the ADFS Server Application and generate the client secret.
 $ADFSApp = Add-AdfsServerApplication -Name "$ClientRoleIdentifier - Server app" -ApplicationGroupIdentifier $ClientRoleIdentifier -RedirectUri $redirect1,$redirect2  -Identifier $Identifier -GenerateClientSecret
+
+#Create the client secret
+$client_secret = $ADFSApp.secret
 
 #Create the ADFS Web API application and configure the policy name it should use
 Add-AdfsWebApiApplication -ApplicationGroupIdentifier $ClientRoleIdentifier  -Name "VC Web API" -Identifier $identifier -AccessControlPolicyName "Permit everyone"
@@ -87,16 +90,19 @@ $transformrule |Out-File -FilePath .\issueancetransformrules.tmp -force -Encodin
 # Name the Web API Application and define its Issuance Transform Rules using an external file. 
 Set-AdfsWebApiApplication -Name "$ClientRoleIdentifier - Web API" -TargetIdentifier $identifier -IssuanceTransformRulesFile .\issueancetransformrules.tmp
 
-$report = ./report_(Get-Date -Format yyyyddmmm_hhmmtt).txt
+#$report = ./report_(Get-Date -Format yyyyddmmm_hhmmtt).txt
 
 Write-Output "Please write down and save the following Client Identifier" ($ClientRoleIdentifier)
 Write-Output "Please write down and save the following Client Identifier UID" ($identifier)
-Write-Output "Please write down and save the following Client Secret: "($ADFSApp.ClientSecret)
+Write-Output "Please write down and save the following Client Secret: " $client_secret
 
 $openidurl = (Get-AdfsEndpoint -addresspath "/adfs/.well-known/openid-configuration")
 write-output "OpenID URL is: " $openidurl.FullUrl.OriginalString
 
-
+#-----------------------------------------------------------------------
+Write-Output "Configuring VC..."
+#Connect to VAMI REST API
+Connect-CisServer -server $vcname -User $CISserverUsername -Password $CISserverPassword -Force
 
 # Change Identity Provider
 
@@ -127,21 +133,24 @@ $adfsSpec = @{
     "groups_claim" = "group";
     "oidc" = @{
         "client_id" = $identifier;
-        "client_secret" = ($ADFSApp.ClientSecret);
-        "discovery_endpoint" = ($openidurl.FullUrl.OriginalString);
+        "client_secret" = $client_secret;
+        "discovery_endpoint" = $openidurl.FullUrl.OriginalString;
         "claim_map" = @{};
-    };
+};
     "idm_protocol" = "LDAP";
     "active_directory_over_ldap" = @{
         "users_base_dn" = $users_base_dn;
         "groups_base_dn" = $groups_base_dn;
         "user_name" = $adusername;
         "password" = $adpassword;
-        "server_endpoints" = $server_endpoint1;
-        "cert_chain" = ($cert_chain)
+        "server_endpoints" = @($server_endpoint1);
+        "cert_chain" =@{
+            "cert_chain" = @(
+                $cert_chain
+            )
         }
-    
-    "is_default" = $true
+};
+"is_default" = $true
+#Write-Output $adfsSpec
 }
 $s.create($adfsSpec)
-)
