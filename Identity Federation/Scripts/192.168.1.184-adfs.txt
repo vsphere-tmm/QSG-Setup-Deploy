@@ -1,0 +1,41 @@
+{
+    "value": [
+        {
+            "provider": "3ee9e3ea-ea2c-46b1-89ad-42eadbbd50a1",
+            "name": "Microsoft ADFS",
+            "config_tag": "Oidc",
+            "is_default": true,
+            "oidc": {
+                "authentication_header": "Basic NTc3YTgyMjMtOTMwYi00MmI4LWE2OGItN2FhMjg2NDU4YWZkOktzOXNMU05oUUVwTUdKN090WG5wMlM4SUJWVWpTOEdyeTF4Y3BUR3k=",
+                "auth_endpoint": "https://adfs.lab1.local/adfs/oauth2/authorize/",
+                "logout_endpoint": "https://adfs.lab1.local/adfs/oauth2/logout",
+                "auth_query_params": [
+                    {
+                        "value": [
+                            "577a8223-930b-42b8-a68b-7aa286458afd"
+                        ],
+                        "key": "resource"
+                    },
+                    {
+                        "value": [
+                            "openid"
+                        ],
+                        "key": "scope"
+                    },
+                    {
+                        "value": [
+                            "code"
+                        ],
+                        "key": "response_type"
+                    }
+                ],
+                "discovery_endpoint": "https://adfs.lab1.local/adfs/.well-known/openid-configuration",
+                "client_id": "577a8223-930b-42b8-a68b-7aa286458afd",
+                "token_endpoint": "https://adfs.lab1.local/adfs/oauth2/token/"
+            },
+            "domain_names": [
+                "lab1.local"
+            ]
+        }
+    ]
+}
