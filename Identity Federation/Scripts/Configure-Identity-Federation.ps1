@@ -91,10 +91,10 @@ $ADFSApp = Add-AdfsServerApplication -Name "$ClientRoleIdentifier - Server app" 
 
 #Create the client secret
 $client_secret = $ADFSApp.ClientSecret
-Write-Output "ADFS Secrect: " $ADFSApp.ClientSecret
-Write-Output "Client Secret:" $client_secret 
+#Write-Output "ADFS Secrect: " $ADFSApp.ClientSecret
+#Write-Output "Client Secret:" $client_secret 
 $client_secret_string = [string]$client_secret
-Write-Output "Client Secret String:" $client_secret_string
+#Write-Output "Client Secret String:" $client_secret_string
 #Create the ADFS Web API application and configure the policy name it should use
 Add-AdfsWebApiApplication -ApplicationGroupIdentifier $AppGroupID  -Name "VC Web API" -Identifier $identifier -AccessControlPolicyName "Permit everyone"
 
