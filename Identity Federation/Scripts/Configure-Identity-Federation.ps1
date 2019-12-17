@@ -20,11 +20,11 @@
 #>
 
 #This is the name of your vCenter. IP address or FQDN
-$vcname = "192.168.1.184"
+$vcname = "192.168.1.188"
 
 #This is the name of your application group and will be used as the root name of the application group components and applications.
-$ClientRoleIdentifier = "VC-ADFS-184"
-$AppGroupID = $ClientRoleIdentifier + "-groupID"
+$ClientRoleIdentifier = "VC-ADFS-188"
+$AppGroupID = $ClientRoleIdentifier + "-GID"
 
 # Creates a new GUID for use by the application group
 [string]$identifier = (New-Guid).Guid
@@ -41,8 +41,8 @@ $CISserverUsername = "administrator@vsphere.local"
 $CISserverPassword = "VMware1!"
 $server_endpoint1 = "ldap://mgt-dc-01.lab1.local:389"
 #$server_endpoint2 = "ldaps://FQDN2:636"
-#$cert_chain = ""
-$cert_chain = @("    -----BEGIN CERTIFICATE-----
+#$ad_cert_chain = ""
+$ad_cert_chain = @("-----BEGIN CERTIFICATE-----
 MIIF5TCCBM2gAwIBAgITHgAAABW7IUji+Cn/lQAAAAAAFTANBgkqhkiG9w0BAQUF
 ADBDMRUwEwYKCZImiZPyLGQBGRYFbG9jYWwxFDASBgoJkiaJk/IsZAEZFgRsYWIx
 MRQwEgYDVQQDEwtOZXcgUm9vdCBDQTAeFw0xOTEwMDMwNDUxMjRaFw0yMDAxMjAx
@@ -83,22 +83,21 @@ uymb122EOzrq7HI99gPJZeJeH4BFMP79yQ==
 
 Write-Output "Configuring ADFS"
 
-#Create the new Application Group in ADFS
-New-AdfsApplicationGroup -Name $ClientRoleIdentifier -ApplicationGroupIdentifier $AppGroupID
+Write-Output "Create the new Application Group in ADFS"
+New-AdfsApplicationGroup -Name $ClientRoleIdentifier #-ApplicationGroupIdentifier $identifier
 
-#Create the ADFS Server Application and generate the client secret.
-$ADFSApp = Add-AdfsServerApplication -Name "$ClientRoleIdentifier - Server app" -ApplicationGroupIdentifier $AppGroupID -RedirectUri $redirect1,$redirect2  -Identifier $Identifier -GenerateClientSecr
+Write-Output "Create the ADFS Server Application and generate the client secret"
+$ADFSApp = Add-AdfsServerApplication -Name ($ClientRoleIdentifier + " VC - Server app") -ApplicationGroupIdentifier $ClientRoleIdentifier -RedirectUri $redirect1,$redirect2  -Identifier $Identifier -GenerateClientSecret
 
-#Create the client secret
+Write-Output "#Create the client secret"
 $client_secret = $ADFSApp.ClientSecret
-#Write-Output "ADFS Secrect: " $ADFSApp.ClientSecret
-#Write-Output "Client Secret:" $client_secret 
-$client_secret_string = [string]$client_secret
-#Write-Output "Client Secret String:" $client_secret_string
-#Create the ADFS Web API application and configure the policy name it should use
-Add-AdfsWebApiApplication -ApplicationGroupIdentifier $AppGroupID  -Name "VC Web API" -Identifier $identifier -AccessControlPolicyName "Permit everyone"
+Write-Output "Please write down and save the following Client Secret: " ($client_secret)
+Write-Output "Please write down and save the following Client Secret: " ($ADFSApp.ClientSecret)
 
-#Grant the ADFS Applciation the allatclaims and openid permissions
+Write-Output "#Create the ADFS Web API application and configure the policy name it should use"
+Add-AdfsWebApiApplication -ApplicationGroupIdentifier $ClientRoleIdentifier  -Name ($ClientRoleIdentifier + " VC Web API") -Identifier $identifier -AccessControlPolicyName "Permit everyone"
+
+Write-Output "#Grant the ADFS Application the allatclaims and openid permissions"
 Grant-AdfsApplicationPermission -ClientRoleIdentifier $identifier -ServerRoleIdentifier $identifier -ScopeNames @('allatclaims', 'openid')
 
 $transformrule = @"
@@ -122,7 +121,7 @@ c:[Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccou
 
 $transformrule |Out-File -FilePath .\issueancetransformrules.tmp -force -Encoding ascii
 
-# Name the Web API Application and define its Issuance Transform Rules using an external file. 
+# Name the Web API Application and define its Issuance Transform Rules using an external file.
 Set-AdfsWebApiApplication -Name "$ClientRoleIdentifier - Web API" -TargetIdentifier $identifier -IssuanceTransformRulesFile .\issueancetransformrules.tmp
 
 #$report = ./report_(Get-Date -Format yyyyddmmm_hhmmtt).txt
@@ -131,7 +130,9 @@ Write-Output "Please write down and save the following Client Identifier" ($Clie
 
 Write-Output "Please write down and save the following Client Identifier UID" ($identifier)
 
-Write-Output "Please write down and save the following Client Secret: " $client_secret
+Write-Output "Please write down and save the following Client Secret: " ($client_secret)
+
+Write-Output ""
 
 $openidurl = (Get-AdfsEndpoint -addresspath "/adfs/.well-known/openid-configuration")
 write-output "OpenID URL is: " $openidurl.FullUrl.OriginalString
@@ -159,12 +160,12 @@ Connect-CisServer -server $vcname -User $CISserverUsername -Password $CISserverP
 # Certificate if using LDAPS
 
 # Inform user to add AD user permissions to VC
-#Write-Output "Client Secret:" $client_secret 
+#Write-Output "Client Secret:" $client_secret
 $client_secret_string = [string]$client_secret
-#Write-Output "Client Secret String:" $client_secret_string
+Write-Output "Client Secret String:" $client_secret_string
 
 $s = Get-CisService "com.vmware.vcenter.identity.providers"
- 
+
 $adfsSpec = @{
     "is_default" = $true;
     "name" = "Microsoft ADFS";
@@ -186,7 +187,7 @@ $adfsSpec = @{
         "server_endpoints" = @($server_endpoint1);
         "cert_chain" =@{
             "cert_chain" = @(
-                $cert_chain
+                $ad_cert_chain
             )
         }
 };
