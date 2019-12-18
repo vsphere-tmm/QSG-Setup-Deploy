@@ -83,22 +83,38 @@ uymb122EOzrq7HI99gPJZeJeH4BFMP79yQ==
 
 Write-Output "Configuring ADFS"
 
+Write-Output ""
+
 Write-Output "Create the new Application Group in ADFS"
 New-AdfsApplicationGroup -Name $ClientRoleIdentifier #-ApplicationGroupIdentifier $identifier
+
+Write-Output ""
 
 Write-Output "Create the ADFS Server Application and generate the client secret"
 $ADFSApp = Add-AdfsServerApplication -Name ($ClientRoleIdentifier + " VC - Server app") -ApplicationGroupIdentifier $ClientRoleIdentifier -RedirectUri $redirect1,$redirect2  -Identifier $Identifier -GenerateClientSecret
 
+Write-Output ""
+
 Write-Output "#Create the client secret"
 $client_secret = $ADFSApp.ClientSecret
-Write-Output "Please write down and save the following Client Secret: " ($client_secret)
-Write-Output "Please write down and save the following Client Secret: " ($ADFSApp.ClientSecret)
 
-Write-Output "#Create the ADFS Web API application and configure the policy name it should use"
+Write-Output ""
+
+# Write-Output "Please write down and save the following Client Secret: " ($ADFSApp.ClientSecret)
+
+Write-Output "Create the ADFS Web API application and configure the policy name it should use"
 Add-AdfsWebApiApplication -ApplicationGroupIdentifier $ClientRoleIdentifier  -Name ($ClientRoleIdentifier + " VC Web API") -Identifier $identifier -AccessControlPolicyName "Permit everyone"
 
-Write-Output "#Grant the ADFS Application the allatclaims and openid permissions"
+Write-Output ""
+
+Write-Output "Grant the ADFS Application the allatclaims and openid permissions"
 Grant-AdfsApplicationPermission -ClientRoleIdentifier $identifier -ServerRoleIdentifier $identifier -ScopeNames @('allatclaims', 'openid')
+
+Write-Output ""
+
+Write-Output "Build the transform rule for ADFS"
+
+Write-Output ""
 
 $transformrule = @"
 @RuleTemplate = "LdapClaims"
@@ -117,18 +133,25 @@ c:[Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccou
  => issue(store = "Active Directory", types = ("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"), query = ";userPrincipalName;{0}", param = c.Value);
 "@
 
-#Write out the tranform rules file
+write-Output "Write out the tranform rules file"
 
 $transformrule |Out-File -FilePath .\issueancetransformrules.tmp -force -Encoding ascii
 
-# Name the Web API Application and define its Issuance Transform Rules using an external file.
+Write-Output ""
+
+Write-Output "Name the Web API Application and define its Issuance Transform Rules using an external file"
+
 Set-AdfsWebApiApplication -Name "$ClientRoleIdentifier - Web API" -TargetIdentifier $identifier -IssuanceTransformRulesFile .\issueancetransformrules.tmp
 
-#$report = ./report_(Get-Date -Format yyyyddmmm_hhmmtt).txt
+Write-Output ""
 
 Write-Output "Please write down and save the following Client Identifier" ($ClientRoleIdentifier)
 
+Write-Output ""
+
 Write-Output "Please write down and save the following Client Identifier UID" ($identifier)
+
+Write-Output ""
 
 Write-Output "Please write down and save the following Client Secret: " ($client_secret)
 
@@ -139,7 +162,7 @@ write-output "OpenID URL is: " $openidurl.FullUrl.OriginalString
 
 #-----------------------------------------------------------------------
 Write-Output "Configuring VC..."
-#Connect to VAMI REST API
+Write-Output "Connect to VAMI REST API"
 Connect-CisServer -server $vcname -User $CISserverUsername -Password $CISserverPassword -Force
 
 # Change Identity Provider
@@ -162,10 +185,12 @@ Connect-CisServer -server $vcname -User $CISserverUsername -Password $CISserverP
 # Inform user to add AD user permissions to VC
 #Write-Output "Client Secret:" $client_secret
 $client_secret_string = [string]$client_secret
-Write-Output "Client Secret String:" $client_secret_string
+#Write-Output "Client Secret String:" $client_secret_string
 
+Write-Output "Connecting to the CIS Service"
 $s = Get-CisService "com.vmware.vcenter.identity.providers"
 
+Write-Output "Build the ADFS Spec"
 $adfsSpec = @{
     "is_default" = $true;
     "name" = "Microsoft ADFS";
@@ -192,4 +217,5 @@ $adfsSpec = @{
         }
 };
 }
+Write-Output "Create the ADFS Spec on VC"
 $s.create($adfsSpec)
