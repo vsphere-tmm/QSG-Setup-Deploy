@@ -22,6 +22,11 @@
 #This is the name of your vCenter. IP address or FQDN
 $vcname = "192.168.1.188"
 
+Write-Output "Connecting to the VC VI Server"
+$CISserverUsername = "administrator@vsphere.local"
+$CISserverPassword = "VMware1!"
+Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
+Connect-VIServer -Server $vcname -User $CISserverUsername -Password $CISserverPassword -Force
 #This is the name of your application group and will be used as the root name of the application group components and applications.
 $ClientRoleIdentifier = "VC-ADFS-188"
 $AppGroupID = $ClientRoleIdentifier + "-GID"
@@ -37,44 +42,29 @@ $users_base_dn = "CN=Users,DC=lab1,DC=local"
 $groups_base_dn = "DC=lab1,DC=local"
 $adusername = "CN=Administrator,CN=Users,DC=lab1,DC=local"
 [VMware.VimAutomation.Cis.Core.Types.V1.Secret]$adpassword = "VMware1!"
-$CISserverUsername = "administrator@vsphere.local"
-$CISserverPassword = "VMware1!"
-$server_endpoint1 = "ldap://mgt-dc-01.lab1.local:389"
+$server_endpoint1 = "ldaps://mgt-dc-01.lab1.local:636"
 #$server_endpoint2 = "ldaps://FQDN2:636"
 #$ad_cert_chain = ""
 $ad_cert_chain = @("-----BEGIN CERTIFICATE-----
-MIIF5TCCBM2gAwIBAgITHgAAABW7IUji+Cn/lQAAAAAAFTANBgkqhkiG9w0BAQUF
-ADBDMRUwEwYKCZImiZPyLGQBGRYFbG9jYWwxFDASBgoJkiaJk/IsZAEZFgRsYWIx
-MRQwEgYDVQQDEwtOZXcgUm9vdCBDQTAeFw0xOTEwMDMwNDUxMjRaFw0yMDAxMjAx
-NzEyMDlaMB8xHTAbBgNVBAMTFE1HVC1EQy0wMS5sYWIxLmxvY2FsMIIBIjANBgkq
-hkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA01f6Fw7fJ0EwmJnxw9uudDTzLzq8JOVK
-l+tL+TPXVVONbfmArGYGqJgIxKe5mESqRUPiXIY1yu6Atp9IX/A139v4v8mdu+Ex
-I9ANPCB/Wrlj4YnGfYsLhOzJCjvZTZhtYJrQXJWTnaclG1QVgXlmLlI/cz8uhqcd
-4xR3uVNkXggdMIfY1EXZXhksG9e7XNFHb2AB54j4/Lj5EimDDBAV504/SK3lUd7u
-Ln3h3nSEuQgYJtqrpRpXU6JWBQbW95Coz+yZrGf++QBQRMyNj0y6FOzUwROO2bgP
-olT64MQzNpUPMA0gNysGi+SV8WEFlCSLcnDfD7r0T92o7crkxWq0KwIDAQABo4IC
-9DCCAvAwLwYJKwYBBAGCNxQCBCIeIABEAG8AbQBhAGkAbgBDAG8AbgB0AHIAbwBs
-AGwAZQByMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDATAOBgNVHQ8BAf8E
-BAMCBaAweAYJKoZIhvcNAQkPBGswaTAOBggqhkiG9w0DAgICAIAwDgYIKoZIhvcN
-AwQCAgCAMAsGCWCGSAFlAwQBKjALBglghkgBZQMEAS0wCwYJYIZIAWUDBAECMAsG
-CWCGSAFlAwQBBTAHBgUrDgMCBzAKBggqhkiG9w0DBzBABgNVHREEOTA3oB8GCSsG
-AQQBgjcZAaASBBAE8Ku8fSipRrhG4pFYLQXyghRNR1QtREMtMDEubGFiMS5sb2Nh
-bDAdBgNVHQ4EFgQUthPBVoMTWOheYP2R0PkgA/idbcswHwYDVR0jBBgwFoAUBFQL
-x7BNlhZYL/Enbji3UfqhblQwgc4GA1UdHwSBxjCBwzCBwKCBvaCBuoaBt2xkYXA6
-Ly8vQ049TmV3JTIwUm9vdCUyMENBLENOPU1HVC1EQy0wMSxDTj1DRFAsQ049UHVi
-bGljJTIwS2V5JTIwU2VydmljZXMsQ049U2VydmljZXMsQ049Q29uZmlndXJhdGlv
-bixEQz1sYWIxLERDPWxvY2FsP2NlcnRpZmljYXRlUmV2b2NhdGlvbkxpc3Q/YmFz
-ZT9vYmplY3RDbGFzcz1jUkxEaXN0cmlidXRpb25Qb2ludDCBwAYIKwYBBQUHAQEE
-gbMwgbAwga0GCCsGAQUFBzAChoGgbGRhcDovLy9DTj1OZXclMjBSb290JTIwQ0Es
-Q049QUlBLENOPVB1YmxpYyUyMEtleSUyMFNlcnZpY2VzLENOPVNlcnZpY2VzLENO
-PUNvbmZpZ3VyYXRpb24sREM9bGFiMSxEQz1sb2NhbD9jQUNlcnRpZmljYXRlP2Jh
-c2U/b2JqZWN0Q2xhc3M9Y2VydGlmaWNhdGlvbkF1dGhvcml0eTANBgkqhkiG9w0B
-AQUFAAOCAQEAyECcJwxGuA669KZOoNfPM+qliZXHjlPdPHLkmM7izEMtl/ZzM8Jt
-gRVWI3qXWTZd5tY+xSIHXPhLE6vmbHDIWXpY8VaZf4cNJqxwhjBuKTMyxRQn3ndD
-MH1cFf1QSyIc3wZwkpOdjm4It3fewrEruZqIrmSI2CNFJDy86ZIo+zSVbiTs2Qox
-WPHgtJW5vKGuvO6+Nb4VsnGa1l6mWO5CEjyEIeKVUKYPoxyeZbBffJB6JZxtdmbr
-NFUsn525n8tnhKphNKwnKvSOGpyqa37WFQAHpogfEMuvQunFe2oFKDbiFkTvLFA1
-uymb122EOzrq7HI99gPJZeJeH4BFMP79yQ==
+MIIDeTCCAmGgAwIBAgIQE7J8a+bxpbBMwk/H2a76EDANBgkqhkiG9w0BAQUFADBD
+MRUwEwYKCZImiZPyLGQBGRYFbG9jYWwxFDASBgoJkiaJk/IsZAEZFgRsYWIxMRQw
+EgYDVQQDEwtOZXcgUm9vdCBDQTAeFw0xNzAxMjAxNzAyMTNaFw0yMDAxMjAxNzEy
+MDlaMEMxFTATBgoJkiaJk/IsZAEZFgVsb2NhbDEUMBIGCgmSJomT8ixkARkWBGxh
+YjExFDASBgNVBAMTC05ldyBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEAyT3RSPM4JUjpDuYnr77YTieDvK0C5QC5wjLurxC4I2hNwjnnstJn
+kqK0DNkQt0xKOD8l3fJ9XaHSVWCvoRVYmOAvInW8y6UVwNzlQ6w1zdNKG+VmT8Jy
+3Hntq5IssvHg0tyfvkxa31BjwiMgAB36YDvFhv6BewueR96m3LY1V2GOwDn/0xfa
+ZdbsnlNg4hFmwtm/WL4RABNO0I30qoPrdE73/8St1MJjkowzOHSww20Q2vwJJAQQ
++lec4fmkhOjNloIy4h8c/KICgJOik2QejprXXkFKt+gNCBhHqD/rIneyJldHQYEz
+mlKZqrpDey5QLJ1fBafo06u9F7RwEi0aTQIDAQABo2kwZzATBgkrBgEEAYI3FAIE
+Bh4EAEMAQTAOBgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4E
+FgQUBFQLx7BNlhZYL/Enbji3UfqhblQwEAYJKwYBBAGCNxUBBAMCAQAwDQYJKoZI
+hvcNAQEFBQADggEBALgWRD3sqWqwTGAPBfFNrlArgO7M98ZEhBOHkSv0P76HR4ch
+w4vQGcuXeJvr1bvSiH26gM5+ikqNSUSegzPQZAfwdvR89X5UtNxDYmjpD2mZBSen
+7ixQgN2BV4tInfcJNQvd3ylTuP3pavETqxmRJwvsykeX9iIi5LpamU3aNOqRulcS
+eU6xCSQguAmqi2SJY/H1n0eRgqHDFRLBhbK0sHhiyTtM7dG0S87QFKPtIPtAg8aA
+8ahyZI/uqYMxFlRewIFNwLkKVNe/+Wj/WFS3rXSVK7m6KHYAKgNLG/uD769wg4UI
+ybee27mHAyOC/WpwjF8g5RhP5ik4f5HC2Tkd1RE=
 -----END CERTIFICATE-----"
 )
 #                "-----BEGIN CERTIFICATE-----....",
@@ -161,7 +151,7 @@ $openidurl = (Get-AdfsEndpoint -addresspath "/adfs/.well-known/openid-configurat
 write-output "OpenID URL is: " $openidurl.FullUrl.OriginalString
 
 #-----------------------------------------------------------------------
-Write-Output "Configuring VC..."
+
 Write-Output "Connect to VAMI REST API"
 Connect-CisServer -server $vcname -User $CISserverUsername -Password $CISserverPassword -Force
 
