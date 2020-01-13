@@ -20,6 +20,38 @@
 .NOTES
     This script should be run on the ADFS system you are connecting to.
 #>
+param(
+        [Parameter(Mandatory=$true)][string]$vc_server,
+        [Parameter(Mandatory=$true)][String]$vc_username,
+        [Parameter(Mandatory=$true)][String]$vc_password,
+        [Parameter(Mandatory=$true)][String]$CISserverUsername,
+        [Parameter(Mandatory=$true)][String]$CISserverPassword,
+        [Parameter()][String]$users_base_dn = "CN=Users,DC=lab1,DC=local",
+        [Parameter()][String]$groups_base_dn = "DC=lab1,DC=local",
+        [Parameter()][String]$adusername = "CN=Administrator,CN=Users,DC=lab1,DC=local",
+        [Parameter()][VMware.VimAutomation.Cis.Core.Types.V1.Secret]$adpassword = "VMware1!",
+        [Parameter()][String]$server_endpoint1 = "ldaps://mgt-dc-01.lab1.local:636",
+        [Parameter()][String]$server_endpoint2
+
+
+)
+#This is the name of your vCenter. IP address or FQDN
+#$vc_server = "192.168.1.188"
+
+#$CISserverUsername = "administrator@vsphere.local"
+#$CISserverPassword = "VMware1!"
+
+# The following are the redirect URL's on vCenter. These should match the URLs in the UI setup.
+$redirect1 = "https://$vcname/ui/login"
+$redirect2 = "https://$vcname/ui/login/oauth2/authcode"
+
+# The following are the AD over LDAP settings:
+#$users_base_dn = "CN=Users,DC=lab1,DC=local"
+#$groups_base_dn = "DC=lab1,DC=local"
+#$adusername = "CN=Administrator,CN=Users,DC=lab1,DC=local"
+#[VMware.VimAutomation.Cis.Core.Types.V1.Secret]$adpassword = "VMware1!"
+#$server_endpoint1 = "ldaps://mgt-dc-01.lab1.local:636"
+#$server_endpoint2 = "ldaps://FQDN2:636"
 
 Write-Host "Checking to see if ADFS is running"
 $adfsinstalled = Get-WindowsFeature |Where-Object {
@@ -32,34 +64,20 @@ else {
     Write-Host "ADFS not installed. You should run this on your ADFS server"
     Exit
 }
-#This is the name of your vCenter. IP address or FQDN
-$vcname = "192.168.1.188"
 Write-Host "Connecting to the VC VI Server" $vcname
-
-$CISserverUsername = "administrator@vsphere.local"
-$CISserverPassword = "VMware1!"
 Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
 Connect-VIServer -Server $vcname -User $CISserverUsername -Password $CISserverPassword -Force
 
 # Creates a new GUID for use by the application group
 [string]$identifier = (New-Guid).Guid
-# The following are the redirect URL's on vCenter. These should match the URLs in the UI setup.
-$redirect1 = "https://$vcname/ui/login"
-$redirect2 = "https://$vcname/ui/login/oauth2/authcode"
 
-# The following are the AD over LDAP settings:
-$users_base_dn = "CN=Users,DC=lab1,DC=local"
-$groups_base_dn = "DC=lab1,DC=local"
-$adusername = "CN=Administrator,CN=Users,DC=lab1,DC=local"
-[VMware.VimAutomation.Cis.Core.Types.V1.Secret]$adpassword = "VMware1!"
-$server_endpoint1 = "ldaps://mgt-dc-01.lab1.local:636"
-#$server_endpoint2 = "ldaps://FQDN2:636"
 
 Write-Host "Get CA Cert from ADFS server LocalMachine store"
 #If you have a funky setup and this doesn't work for you then you may have to get the CA cert
-#manually using openssl. e.g. openssl s_client -connect DC1.ad.local:636 -showcerts
-# Replace "@($ad_cert_chain)" with "@("the contents that begins with BEGIN CERTIFICATE
-# and ends with END CERTIFICATE"
+#manually using openssl.
+# e.g. openssl s_client -connect DC1.ad.local:636 -showcerts
+# Replace "@($ad_cert_chain)" with "@("the actual cert content that begins with BEGIN CERTIFICATE
+# and ends with END CERTIFICATE")
 
 #Gets the FQDN
 $fqdn = [System.Net.Dns]::GetHostByName((hostname)).HostName
@@ -201,18 +219,28 @@ $adfsSpec = @{
 };
 }
 Write-Host "Create the ADFS Spec on VC"
-$s.create($adfsSpec)
+try {
+    $s.create($adfsSpec)
 
-Write-Host "Your vCenter and ADFS are now connected"
-Write-Host "Please write down and save the following Client Identifier" ($ClientRoleIdentifier)
+}
+catch {
+    $ErrorMessage = $_.Exception.Message
+    $FailedItem = $_.Exception.ItemName
+    Break
+}
 
-Write-Host ""
+Write-Host @"
+Your vCenter and ADFS are now connected!
 
-Write-Host "Please write down and save the following Client Identifier UID" ($identifier)
+ Please write down and save the following Client Identifier
+($ClientRoleIdentifier)
 
-Write-Host ""
+Please write down and save the following Client Identifier UID
+($identifier)
 
-Write-Host "Please write down and save the following Client Secret: " ($client_secret)
+Please write down and save the following Client Secret:
+($client_secret)
 
-Write-Host ""
-Write-Host "OpenID URL is: " $openidurl.FullUrl.OriginalString
+OpenID URL is:
+($openidurl.FullUrl.OriginalString)
+"@
