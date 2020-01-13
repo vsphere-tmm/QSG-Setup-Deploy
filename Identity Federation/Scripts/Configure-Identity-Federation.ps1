@@ -20,6 +20,12 @@
 .NOTES
     This script should be run on the ADFS system you are connecting to.
 #>
+
+# Because we are using a PowerCLI datatype for the AD Password below, we need to ensure PowerCLI gets loaded.
+# Changes to PowerShell meant that the module wouldn't load until the a command in that module was run
+#Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
+
+
 param(
         [Parameter(Mandatory=$true)][string]$vc_server,
         [Parameter(Mandatory=$true)][String]$vc_username,
@@ -64,8 +70,7 @@ else {
     Write-Host "ADFS not installed. You should run this on your ADFS server"
     Exit
 }
-Write-Host "Connecting to the VC VI Server" $vcname
-Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
+Write-Host "Connecting to the vCenter" $vcname
 Connect-VIServer -Server $vcname -User $CISserverUsername -Password $CISserverPassword -Force
 
 # Creates a new GUID for use by the application group
@@ -73,28 +78,29 @@ Connect-VIServer -Server $vcname -User $CISserverUsername -Password $CISserverPa
 
 
 Write-Host "Get CA Cert from ADFS server LocalMachine store"
-#If you have a funky setup and this doesn't work for you then you may have to get the CA cert
-#manually using openssl.
+# If you have a funky setup and this doesn't work for you then you may have to get the CA cert
+# manually using openssl.
 # e.g. openssl s_client -connect DC1.ad.local:636 -showcerts
 # Replace "@($ad_cert_chain)" with "@("the actual cert content that begins with BEGIN CERTIFICATE
 # and ends with END CERTIFICATE")
 
-#Gets the FQDN
+# Gets the FQDN
 $fqdn = [System.Net.Dns]::GetHostByName((hostname)).HostName
 
-#Then gets the cert issued to that FQDN (The ADFS server)
+# Then gets the cert issued to that FQDN (The ADFS server)
 $cert = Get-ChildItem Cert:\LocalMachine\My |Where-Object {$_.Subject -match $fqdn.tolower()}
 
-#Then gets who issued that cert (The CA)
+# Then gets who issued that cert (The CA)
 $CAcert = Get-ChildItem Cert:\LocalMachine\CA | Where-Object { $_.Subject -imatch $cert.Issuer}
 
-#Then gets the cert of the CA and converts it to Base64
+# Then gets the cert of the CA and converts it to Base64
 $ad_cert_chain = [convert]::tobase64string($CAcert.export('Cert'),[system.base64formattingoptions]::insertlinebreaks)
 
 
 Write-Host "Configuring ADFS"
 
-#This is the name of your application group and will be used as the root name of the application group components and applications.
+# This is the name of your application group and will be used as the root name of the application group
+# components and applications. In this example we'll use the FQDN of vCenter.
 $ClientRoleIdentifier = $vcname
 
 Write-Host ""
@@ -113,8 +119,6 @@ Write-Host "#Create the client secret"
 $client_secret = $ADFSApp.ClientSecret
 
 Write-Host ""
-
-# Write-Host "Please write down and save the following Client Secret: " ($ADFSApp.ClientSecret)
 
 Write-Host "Create the ADFS Web API application and configure the policy name it should use"
 Add-AdfsWebApiApplication -ApplicationGroupIdentifier $ClientRoleIdentifier  -Name ($ClientRoleIdentifier + " VC Web API") -Identifier $identifier -AccessControlPolicyName "Permit everyone"
@@ -151,8 +155,6 @@ Write-Host "Write out the tranform rules file"
 
 $transformrule |Out-File -FilePath $temp\issueancetransformrules.tmp -force -Encoding ascii
 
-Write-Host ""
-
 Write-Host "Name the Web API Application and define its Issuance Transform Rules using an external file"
 
 Set-AdfsWebApiApplication -Name "$ClientRoleIdentifier - Web API" -TargetIdentifier $identifier -IssuanceTransformRulesFile $temp\issueancetransformrules.tmp
@@ -166,30 +168,9 @@ $openidurl = (Get-AdfsEndpoint -addresspath "/adfs/.well-known/openid-configurat
 Write-Host "Connect to VAMI REST API"
 Connect-CisServer -server $vcname -User $CISserverUsername -Password $CISserverPassword -Force
 
-# Change Identity Provider
-
-# Configure the following:
-#Client Identifier
-#Shared Secret
-#OpenID Address
-
-#Configure/create spec for AD over LDAP so VC can look up user accounts to map permissions
-# Required fields:
-# Base distinguished Name for Users
-# Base distinguished Name for Groups
-# Username
-# Password
-# Primary Server URL (ldap://FQDN:389)
-# Secondary Server URL (ldap://FQDN:389)
-# Certificate if using LDAPS
-
-# Inform user to add AD user permissions to VC
-#Write-Host "Client Secret:" $client_secret
-$client_secret_string = [string]$client_secret
-#Write-Host "Client Secret String:" $client_secret_string
-
 Write-Host "Connecting to the CIS Service"
 $s = Get-CisService "com.vmware.vcenter.identity.providers"
+$client_secret_string = [string]$client_secret
 
 Write-Host "Build the ADFS Spec"
 $adfsSpec = @{
