@@ -1,14 +1,16 @@
 ##
 <#
 .SYNOPSIS
-    Sets up Microsoft ADFS for use by VMware vCenter's Identity Federation.
+    Sets up Microsoft ADFS and vCenter for use with VMware vCenter's Identity Federation.
 .DESCRIPTION
-    Introduced in vSphere 7, Identity Federation allows for an external identity provider, 
+    Introduced in vSphere 7, Identity Federation allows for an external identity provider,
     in this case Microsoft Active Directory Federation Services (a.k.a. ADFS) to authenticate a vCenter user.
-    The user is then redirected to vCenter and logged in automatically. 
+    The user is then redirected to vCenter and logged in automatically.
 
     This script configured MS ADFS to work with vCenter. It adds an ADFS Application Group and server and API
-    applications and configures them correctly. 
+    applications and configures them correctly.
+
+    This script should be run from the ADFS server. That is where the ADFS cmdlets are installed.
 .EXAMPLE
 
 .INPUTS
@@ -19,92 +21,118 @@
     This script should be run on the ADFS system you are connecting to.
 #>
 
+# Because we are using a PowerCLI datatype for the AD Password below, we need to ensure PowerCLI gets loaded.
+# Changes to PowerShell meant that the module wouldn't load until the a command in that module was run
+#Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
+
+
+param(
+        [Parameter(Mandatory=$true)][string]$vc_server,
+        [Parameter(Mandatory=$true)][String]$vc_username,
+        [Parameter(Mandatory=$true)][String]$vc_password,
+        [Parameter(Mandatory=$true)][String]$CISserverUsername,
+        [Parameter(Mandatory=$true)][String]$CISserverPassword,
+        [Parameter()][String]$users_base_dn = "CN=Users,DC=lab1,DC=local",
+        [Parameter()][String]$groups_base_dn = "DC=lab1,DC=local",
+        [Parameter()][String]$adusername = "CN=Administrator,CN=Users,DC=lab1,DC=local",
+        [Parameter()][VMware.VimAutomation.Cis.Core.Types.V1.Secret]$adpassword = "VMware1!",
+        [Parameter()][String]$server_endpoint1 = "ldaps://mgt-dc-01.lab1.local:636",
+        [Parameter()][String]$server_endpoint2
+
+
+)
 #This is the name of your vCenter. IP address or FQDN
-$vcname = "192.168.1.188"
+#$vc_server = "192.168.1.188"
 
-Write-Output "Connecting to the VC VI Server"
-$CISserverUsername = "administrator@vsphere.local"
-$CISserverPassword = "VMware1!"
-Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
-Connect-VIServer -Server $vcname -User $CISserverUsername -Password $CISserverPassword -Force
-#This is the name of your application group and will be used as the root name of the application group components and applications.
-$ClientRoleIdentifier = "VC-ADFS-188"
-$AppGroupID = $ClientRoleIdentifier + "-GID"
+#$CISserverUsername = "administrator@vsphere.local"
+#$CISserverPassword = "VMware1!"
 
-# Creates a new GUID for use by the application group
-[string]$identifier = (New-Guid).Guid
 # The following are the redirect URL's on vCenter. These should match the URLs in the UI setup.
 $redirect1 = "https://$vcname/ui/login"
 $redirect2 = "https://$vcname/ui/login/oauth2/authcode"
 
 # The following are the AD over LDAP settings:
-$users_base_dn = "CN=Users,DC=lab1,DC=local"
-$groups_base_dn = "DC=lab1,DC=local"
-$adusername = "CN=Administrator,CN=Users,DC=lab1,DC=local"
-[VMware.VimAutomation.Cis.Core.Types.V1.Secret]$adpassword = "VMware1!"
-$server_endpoint1 = "ldaps://mgt-dc-01.lab1.local:636"
+#$users_base_dn = "CN=Users,DC=lab1,DC=local"
+#$groups_base_dn = "DC=lab1,DC=local"
+#$adusername = "CN=Administrator,CN=Users,DC=lab1,DC=local"
+#[VMware.VimAutomation.Cis.Core.Types.V1.Secret]$adpassword = "VMware1!"
+#$server_endpoint1 = "ldaps://mgt-dc-01.lab1.local:636"
 #$server_endpoint2 = "ldaps://FQDN2:636"
-#$ad_cert_chain = ""
-$ad_cert_chain = @("-----BEGIN CERTIFICATE-----
-MIIDeTCCAmGgAwIBAgIQE7J8a+bxpbBMwk/H2a76EDANBgkqhkiG9w0BAQUFADBD
-MRUwEwYKCZImiZPyLGQBGRYFbG9jYWwxFDASBgoJkiaJk/IsZAEZFgRsYWIxMRQw
-EgYDVQQDEwtOZXcgUm9vdCBDQTAeFw0xNzAxMjAxNzAyMTNaFw0yMDAxMjAxNzEy
-MDlaMEMxFTATBgoJkiaJk/IsZAEZFgVsb2NhbDEUMBIGCgmSJomT8ixkARkWBGxh
-YjExFDASBgNVBAMTC05ldyBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
-MIIBCgKCAQEAyT3RSPM4JUjpDuYnr77YTieDvK0C5QC5wjLurxC4I2hNwjnnstJn
-kqK0DNkQt0xKOD8l3fJ9XaHSVWCvoRVYmOAvInW8y6UVwNzlQ6w1zdNKG+VmT8Jy
-3Hntq5IssvHg0tyfvkxa31BjwiMgAB36YDvFhv6BewueR96m3LY1V2GOwDn/0xfa
-ZdbsnlNg4hFmwtm/WL4RABNO0I30qoPrdE73/8St1MJjkowzOHSww20Q2vwJJAQQ
-+lec4fmkhOjNloIy4h8c/KICgJOik2QejprXXkFKt+gNCBhHqD/rIneyJldHQYEz
-mlKZqrpDey5QLJ1fBafo06u9F7RwEi0aTQIDAQABo2kwZzATBgkrBgEEAYI3FAIE
-Bh4EAEMAQTAOBgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4E
-FgQUBFQLx7BNlhZYL/Enbji3UfqhblQwEAYJKwYBBAGCNxUBBAMCAQAwDQYJKoZI
-hvcNAQEFBQADggEBALgWRD3sqWqwTGAPBfFNrlArgO7M98ZEhBOHkSv0P76HR4ch
-w4vQGcuXeJvr1bvSiH26gM5+ikqNSUSegzPQZAfwdvR89X5UtNxDYmjpD2mZBSen
-7ixQgN2BV4tInfcJNQvd3ylTuP3pavETqxmRJwvsykeX9iIi5LpamU3aNOqRulcS
-eU6xCSQguAmqi2SJY/H1n0eRgqHDFRLBhbK0sHhiyTtM7dG0S87QFKPtIPtAg8aA
-8ahyZI/uqYMxFlRewIFNwLkKVNe/+Wj/WFS3rXSVK7m6KHYAKgNLG/uD769wg4UI
-ybee27mHAyOC/WpwjF8g5RhP5ik4f5HC2Tkd1RE=
------END CERTIFICATE-----"
-)
-#                "-----BEGIN CERTIFICATE-----....",
-#                "-----BEGIN CERTIFICATE-----...."
+
+Write-Host "Checking to see if ADFS is running"
+$adfsinstalled = Get-WindowsFeature |Where-Object {
+    $_.Name -imatch "ADFS-Federation"
+}
+if ($adfsinstalled.installed -eq $true) {
+    Write-Host "ADFS is installed. Script Continuing"
+}
+else {
+    Write-Host "ADFS not installed. You should run this on your ADFS server"
+    Exit
+}
+Write-Host "Connecting to the vCenter" $vcname
+Connect-VIServer -Server $vcname -User $CISserverUsername -Password $CISserverPassword -Force
+
+# Creates a new GUID for use by the application group
+[string]$identifier = (New-Guid).Guid
 
 
-Write-Output "Configuring ADFS"
+Write-Host "Get CA Cert from ADFS server LocalMachine store"
+# If you have a funky setup and this doesn't work for you then you may have to get the CA cert
+# manually using openssl.
+# e.g. openssl s_client -connect DC1.ad.local:636 -showcerts
+# Replace "@($ad_cert_chain)" with "@("the actual cert content that begins with BEGIN CERTIFICATE
+# and ends with END CERTIFICATE")
 
-Write-Output ""
+# Gets the FQDN
+$fqdn = [System.Net.Dns]::GetHostByName((hostname)).HostName
 
-Write-Output "Create the new Application Group in ADFS"
-New-AdfsApplicationGroup -Name $ClientRoleIdentifier #-ApplicationGroupIdentifier $identifier
+# Then gets the cert issued to that FQDN (The ADFS server)
+$cert = Get-ChildItem Cert:\LocalMachine\My |Where-Object {$_.Subject -match $fqdn.tolower()}
 
-Write-Output ""
+# Then gets who issued that cert (The CA)
+$CAcert = Get-ChildItem Cert:\LocalMachine\CA | Where-Object { $_.Subject -imatch $cert.Issuer}
 
-Write-Output "Create the ADFS Server Application and generate the client secret"
+# Then gets the cert of the CA and converts it to Base64
+$ad_cert_chain = [convert]::tobase64string($CAcert.export('Cert'),[system.base64formattingoptions]::insertlinebreaks)
+
+
+Write-Host "Configuring ADFS"
+
+# This is the name of your application group and will be used as the root name of the application group
+# components and applications. In this example we'll use the FQDN of vCenter.
+$ClientRoleIdentifier = $vcname
+
+Write-Host ""
+
+Write-Host "Create the new Application Group in ADFS"
+New-AdfsApplicationGroup -Name $ClientRoleIdentifier
+
+Write-Host ""
+
+Write-Host "Create the ADFS Server Application and generate the client secret"
 $ADFSApp = Add-AdfsServerApplication -Name ($ClientRoleIdentifier + " VC - Server app") -ApplicationGroupIdentifier $ClientRoleIdentifier -RedirectUri $redirect1,$redirect2  -Identifier $Identifier -GenerateClientSecret
 
-Write-Output ""
+Write-Host ""
 
-Write-Output "#Create the client secret"
+Write-Host "#Create the client secret"
 $client_secret = $ADFSApp.ClientSecret
 
-Write-Output ""
+Write-Host ""
 
-# Write-Output "Please write down and save the following Client Secret: " ($ADFSApp.ClientSecret)
-
-Write-Output "Create the ADFS Web API application and configure the policy name it should use"
+Write-Host "Create the ADFS Web API application and configure the policy name it should use"
 Add-AdfsWebApiApplication -ApplicationGroupIdentifier $ClientRoleIdentifier  -Name ($ClientRoleIdentifier + " VC Web API") -Identifier $identifier -AccessControlPolicyName "Permit everyone"
 
-Write-Output ""
+Write-Host ""
 
-Write-Output "Grant the ADFS Application the allatclaims and openid permissions"
+Write-Host "Grant the ADFS Application the allatclaims and openid permissions"
 Grant-AdfsApplicationPermission -ClientRoleIdentifier $identifier -ServerRoleIdentifier $identifier -ScopeNames @('allatclaims', 'openid')
 
-Write-Output ""
+Write-Host ""
 
-Write-Output "Build the transform rule for ADFS"
+Write-Host "Build the transform rule for ADFS"
 
-Write-Output ""
+Write-Host ""
 
 $transformrule = @"
 @RuleTemplate = "LdapClaims"
@@ -123,64 +151,28 @@ c:[Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccou
  => issue(store = "Active Directory", types = ("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"), query = ";userPrincipalName;{0}", param = c.Value);
 "@
 
-write-Output "Write out the tranform rules file"
+Write-Host "Write out the tranform rules file"
 
-$transformrule |Out-File -FilePath .\issueancetransformrules.tmp -force -Encoding ascii
+$transformrule |Out-File -FilePath $temp\issueancetransformrules.tmp -force -Encoding ascii
 
-Write-Output ""
+Write-Host "Name the Web API Application and define its Issuance Transform Rules using an external file"
 
-Write-Output "Name the Web API Application and define its Issuance Transform Rules using an external file"
+Set-AdfsWebApiApplication -Name "$ClientRoleIdentifier - Web API" -TargetIdentifier $identifier -IssuanceTransformRulesFile $temp\issueancetransformrules.tmp
 
-Set-AdfsWebApiApplication -Name "$ClientRoleIdentifier - Web API" -TargetIdentifier $identifier -IssuanceTransformRulesFile .\issueancetransformrules.tmp
-
-Write-Output ""
-
-Write-Output "Please write down and save the following Client Identifier" ($ClientRoleIdentifier)
-
-Write-Output ""
-
-Write-Output "Please write down and save the following Client Identifier UID" ($identifier)
-
-Write-Output ""
-
-Write-Output "Please write down and save the following Client Secret: " ($client_secret)
-
-Write-Output ""
+Write-Host ""
 
 $openidurl = (Get-AdfsEndpoint -addresspath "/adfs/.well-known/openid-configuration")
-write-output "OpenID URL is: " $openidurl.FullUrl.OriginalString
 
 #-----------------------------------------------------------------------
 
-Write-Output "Connect to VAMI REST API"
+Write-Host "Connect to VAMI REST API"
 Connect-CisServer -server $vcname -User $CISserverUsername -Password $CISserverPassword -Force
 
-# Change Identity Provider
-
-# Configure the following:
-#Client Identifier
-#Shared Secret
-#OpenID Address
-
-#Configure/create spec for AD over LDAP so VC can look up user accounts to map permissions
-# Required fields:
-# Base distinguished Name for Users
-# Base distinguished Name for Groups
-# Username
-# Password
-# Primary Server URL (ldap://FQDN:389)
-# Secondary Server URL (ldap://FQDN:389)
-# Certificate if using LDAPS
-
-# Inform user to add AD user permissions to VC
-#Write-Output "Client Secret:" $client_secret
-$client_secret_string = [string]$client_secret
-#Write-Output "Client Secret String:" $client_secret_string
-
-Write-Output "Connecting to the CIS Service"
+Write-Host "Connecting to the CIS Service"
 $s = Get-CisService "com.vmware.vcenter.identity.providers"
+$client_secret_string = [string]$client_secret
 
-Write-Output "Build the ADFS Spec"
+Write-Host "Build the ADFS Spec"
 $adfsSpec = @{
     "is_default" = $true;
     "name" = "Microsoft ADFS";
@@ -207,5 +199,29 @@ $adfsSpec = @{
         }
 };
 }
-Write-Output "Create the ADFS Spec on VC"
-$s.create($adfsSpec)
+Write-Host "Create the ADFS Spec on VC"
+try {
+    $s.create($adfsSpec)
+
+}
+catch {
+    $ErrorMessage = $_.Exception.Message
+    $FailedItem = $_.Exception.ItemName
+    Break
+}
+
+Write-Host @"
+Your vCenter and ADFS are now connected!
+
+ Please write down and save the following Client Identifier
+($ClientRoleIdentifier)
+
+Please write down and save the following Client Identifier UID
+($identifier)
+
+Please write down and save the following Client Secret:
+($client_secret)
+
+OpenID URL is:
+($openidurl.FullUrl.OriginalString)
+"@
