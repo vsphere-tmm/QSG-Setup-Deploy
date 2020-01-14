@@ -35,7 +35,7 @@ param(
         [Parameter()][String]$users_base_dn = "CN=Users,DC=lab1,DC=local",
         [Parameter()][String]$groups_base_dn = "DC=lab1,DC=local",
         [Parameter()][String]$adusername = "CN=Administrator,CN=Users,DC=lab1,DC=local",
-        [Parameter()][VMware.VimAutomation.Cis.Core.Types.V1.Secret]$adpassword = "VMware1!",
+        [Parameter()][String]$adpasswordstring = "VMware1!",
         [Parameter()][String]$server_endpoint1 = "ldaps://mgt-dc-01.lab1.local:636",
         [Parameter()][String]$server_endpoint2
 
@@ -171,6 +171,12 @@ Connect-CisServer -server $vcname -User $CISserverUsername -Password $CISserverP
 Write-Host "Connecting to the CIS Service"
 $s = Get-CisService "com.vmware.vcenter.identity.providers"
 $client_secret_string = [string]$client_secret
+
+#Re-Cast the AD password to a PowerCLI secret so the ADFS spec works correctly.
+# Doing this here because I can't do it as part of the param because PowerCLI isn't loaded yet
+# Now that PowerCLI is loaded by the Connect-xxServer commands this re-casting will work.
+[VMware.VimAutomation.Cis.Core.Types.V1.Secret]$adpassword = $adpasswordstring
+
 
 Write-Host "Build the ADFS Spec"
 $adfsSpec = @{
