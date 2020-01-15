@@ -21,11 +21,6 @@
     This script should be run on the ADFS system you are connecting to.
 #>
 
-# Because we are using a PowerCLI datatype for the AD Password below, we need to ensure PowerCLI gets loaded.
-# Changes to PowerShell meant that the module wouldn't load until the a command in that module was run
-#Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
-
-
 param(
         [Parameter(Mandatory=$true)][string]$vc_server,
         [Parameter(Mandatory=$true)][String]$vc_username = "administrator@vsphere.local",
