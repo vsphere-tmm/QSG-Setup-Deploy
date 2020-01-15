@@ -28,10 +28,10 @@
 
 param(
         [Parameter(Mandatory=$true)][string]$vc_server,
-        [Parameter(Mandatory=$true)][String]$vc_username,
-        [Parameter(Mandatory=$true)][String]$vc_password,
-        [Parameter(Mandatory=$true)][String]$CISserverUsername,
-        [Parameter(Mandatory=$true)][String]$CISserverPassword,
+        [Parameter(Mandatory=$true)][String]$vc_username = "administrator@vsphere.local",
+        [Parameter(Mandatory=$true)][String]$vc_password = "VMware1!",
+        [Parameter(Mandatory=$true)][String]$CISserverUsername = "administrator@vsphere.local",
+        [Parameter(Mandatory=$true)][String]$CISserverPassword = "VMware1!",
         [Parameter()][String]$users_base_dn = "CN=Users,DC=lab1,DC=local",
         [Parameter()][String]$groups_base_dn = "DC=lab1,DC=local",
         [Parameter()][String]$adusername = "CN=Administrator,CN=Users,DC=lab1,DC=local",
