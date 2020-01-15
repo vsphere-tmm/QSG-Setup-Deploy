@@ -41,23 +41,9 @@ param(
 
 
 )
-#This is the name of your vCenter. IP address or FQDN
-#$vc_server = "192.168.1.188"
-
-#$CISserverUsername = "administrator@vsphere.local"
-#$CISserverPassword = "VMware1!"
-
 # The following are the redirect URL's on vCenter. These should match the URLs in the UI setup.
 $redirect1 = "https://$vc_server/ui/login"
 $redirect2 = "https://$vc_server/ui/login/oauth2/authcode"
-
-# The following are the AD over LDAP settings:
-#$users_base_dn = "CN=Users,DC=lab1,DC=local"
-#$groups_base_dn = "DC=lab1,DC=local"
-#$adusername = "CN=Administrator,CN=Users,DC=lab1,DC=local"
-#[VMware.VimAutomation.Cis.Core.Types.V1.Secret]$adpassword = "VMware1!"
-#$server_endpoint1 = "ldaps://mgt-dc-01.lab1.local:636"
-#$server_endpoint2 = "ldaps://FQDN2:636"
 
 Write-Host "Checking to see if ADFS is running"
 $adfsinstalled = Get-WindowsFeature |Where-Object {
