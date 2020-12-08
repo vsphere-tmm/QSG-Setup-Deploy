@@ -78,7 +78,7 @@ $vmhosts = Get-VMHost
 New-ContentLibrary -Datastore $datastore -name "tkg-cl" -AutomaticSync -SubscriptionUrl "http://wp-content.vmware.com/v2/latest/lib.json" -Confirm:$false
 
 $workloadhosts = get-cluster $Cluster | get-vmhost
-New-VDSwitch -Name "Dswitch" -MTU 9000 -NumUplinkPorts 1 -location vSAN-DC
+New-VDSwitch -Name "Dswitch" -MTU 1500 -NumUplinkPorts 1 -location vSAN-DC
 Get-VDSwitch "Dswitch" | Add-VDSwitchVMHost -VMHost $workloadhosts
 Get-VDSwitch "Dswitch" | Add-VDSwitchPhysicalNetworkAdapter -VMHostNetworkAdapter ($workloadhosts | Get-VMHostNetworkAdapter -Name vmnic2) -Confirm:$false
 New-VDPortgroup -Name "Workload Network" -VDSwitch "Dswitch"
@@ -97,10 +97,10 @@ Get-Datastore -Name $datastore | New-TagAssignment -Tag $StoragePolicyTagName
 New-SpbmStoragePolicy -Name $StoragePolicyName -AnyOfRuleSets (New-SpbmRuleSet -Name "wcp-ruleset" -AllOfRules (New-SpbmRule -AnyOfTags (Get-Tag $StoragePolicyTagName)))
 #
 # Setup and deploy the HAProxy OVA
+# If you haven't downloaded the OVA you can change $ovfpath accordingly
+#The file is located here: http://storage.googleapis.com/load-balancer-api/ova/release/v0.1.8/haproxy-v0.1.8.ova
 $DiskFormat = "Thin"
 $VMname = "haproxy-demo"
-# If you haven't downloaded the OVA you can change $ovfpath accordingly
-#ovfPath = "http://storage.googleapis.com/load-balancer-api/ova/release/v0.1.6/haproxy-v0.1.6.ova"
 $ovfPath =  "K:\Kits\VMware\vSphere\7U1\haproxy-v0.1.8.ova"
 $ovfConfig = Get-OvfConfiguration -Ovf $ovfPath
 #
@@ -127,9 +127,9 @@ $ovfConfig.loadbalance.haproxy_pwd.Value = "vmware"
 $ovfConfig.loadbalance.haproxy_user.Value = "admin"
 $ovfConfig.loadbalance.service_ip_range.Value = "10.174.72.208/28"
 #The following are virtual switch portgroup names. Edit accordingly.
-$ovfConfig.NetworkMapping.Management.Value = "VM Network"
-$ovfConfig.NetworkMapping.Workload.Value = "Workload Network"
-$ovfConfig.NetworkMapping.Frontend.Value = ""
+$ovfConfig.NetworkMapping.Management.Value = "VM Network"     #This is the default VSS portgroup created at install time
+$ovfConfig.NetworkMapping.Workload.Value = "Workload Network" #This is the portgroup created earlier
+$ovfConfig.NetworkMapping.Frontend.Value = ""                 #Not used in this script
 #
 # The Import-vApp cmdlet requires a value for an ESXi host. I just grab the 2nd one on the list.
 # Certainly some logic could be added to randomize it.
@@ -137,7 +137,7 @@ $VMhost = get-vmhost $vmhosts[2]
 #
 # Deploy the OVA and start it up.
 Import-VApp -Source $ovfpath -OvfConfiguration $ovfConfig -Name $VMName -VMHost $VMHost -Location $Cluster -Datastore $Datastore -DiskStorageFormat $DiskFormat -Confirm:$false
-Start-VM $VMname
+Start-VM (Get-VM $VMname)
 # Now start the build-out of the results to be put into the UI for setup of WCP
 $Dataplane_ip = $ovfConfig.network.management_ip.Value
 $Dataplane_ip = $Dataplane_ip -replace ".{3}$"
