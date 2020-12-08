@@ -101,7 +101,7 @@ New-SpbmStoragePolicy -Name $StoragePolicyName -AnyOfRuleSets (New-SpbmRuleSet -
 #The file is located here: http://storage.googleapis.com/load-balancer-api/ova/release/v0.1.8/haproxy-v0.1.8.ova
 $DiskFormat = "Thin"
 $VMname = "haproxy-demo"
-$ovfPath =  "K:\Kits\VMware\vSphere\7U1\haproxy-v0.1.8.ova"
+$ovfPath =  "c:\user\Downloads\haproxy-v0.1.8.ova"
 $ovfConfig = Get-OvfConfiguration -Ovf $ovfPath
 #
 $ovfConfig.network.hostname.Value = "haproxy.local"
