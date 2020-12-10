@@ -98,7 +98,7 @@ New-SpbmStoragePolicy -Name $StoragePolicyName -AnyOfRuleSets (New-SpbmRuleSet -
 #
 # Setup and deploy the HAProxy OVA
 # If you haven't downloaded the OVA you can change $ovfpath accordingly
-#The file is located here: http://storage.googleapis.com/load-balancer-api/ova/release/v0.1.8/haproxy-v0.1.8.ova
+#The file is located here: https://github.com/haproxytech/vmware-haproxy#download
 $DiskFormat = "Thin"
 $VMname = "haproxy-demo"
 $ovfPath =  "c:\user\Downloads\haproxy-v0.1.8.ova"
