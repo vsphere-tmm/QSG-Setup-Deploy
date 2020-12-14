@@ -20,11 +20,13 @@ $datastore = Get-Datastore -Name  "vsanDatastore"
 $StoragePolicyName = "kubernetes-demo-storage"
 $StoragePolicyTagCategory = "kubernetes-demo-tag-category"
 $StoragePolicyTagName = "kubernetes-gold-storage-tag"
+#
+Stop-VM -Confirm:$false -Kill (Get-VM $VMname)
+Remove-VM -Confirm:$false (Get-VM $VMname)
+#
 Remove-ContentLibrary -Confirm:$false  (Get-ContentLibrary -Name "tkg-cl")
 Remove-VDSwitch -Confirm:$false (Get-VDSwitch "Dswitch")
 Remove-TagCategory $StoragePolicyTagCategory -Confirm:$false
 Get-Tag $StoragePolicyTagName | Remove-Tag  -Confirm:$false
-Get-Datastore -Name $datastore | Remove-TagAssignment  $StoragePolicyTagName
+Get-Datastore -Name $datastore | Remove-TagAssignment -Confirm:$false
 Remove-SpbmStoragePolicy $StoragePolicyName -Confirm:$false
-Stop-VM -Confirm:$false -Kill (Get-VM $VMname)
-Remove-VM -Confirm:$false (Get-VM $VMname)
