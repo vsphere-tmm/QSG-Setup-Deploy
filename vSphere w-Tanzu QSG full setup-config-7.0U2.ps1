@@ -86,6 +86,7 @@ $vc = "192.168.111.17"
 $vc_user = "administrator@vsphere.local"
 #$vc_password = "Admin!23"
 $vc_password = "VMware1!"
+$vc_password = "VMware1!"
 Connect-VIServer -User $vc_user -Password $vc_password -Server $vc
 $Cluster = Get-Cluster  -Name "vSAN-Cluster"
 $datastore = Get-Datastore -Name  "vsanDatastore"
