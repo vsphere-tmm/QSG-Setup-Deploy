@@ -72,13 +72,14 @@ $vc_password = "Admin!23"
 Connect-VIServer -User $vc_user -Password $vc_password -Server $vc
 $Cluster = Get-Cluster  -Name "vSAN-Cluster"
 $datastore = Get-Datastore -Name  "vsanDatastore"
+$datacenter = get-datacenter datacenter
 $vmhosts = Get-VMHost
 
 #Set up the content library needed by vSphere with Tanzu
 New-ContentLibrary -Datastore $datastore -name "tkg-cl" -AutomaticSync -SubscriptionUrl "http://wp-content.vmware.com/v2/latest/lib.json" -Confirm:$false
 
 $workloadhosts = get-cluster $Cluster | get-vmhost
-New-VDSwitch -Name "Dswitch" -MTU 1500 -NumUplinkPorts 1 -location vSAN-DC
+New-VDSwitch -Name "Dswitch" -MTU 1600 -NumUplinkPorts 1 -location $datacenter
 Get-VDSwitch "Dswitch" | Add-VDSwitchVMHost -VMHost $workloadhosts
 Get-VDSwitch "Dswitch" | Add-VDSwitchPhysicalNetworkAdapter -VMHostNetworkAdapter ($workloadhosts | Get-VMHostNetworkAdapter -Name vmnic2) -Confirm:$false
 New-VDPortgroup -Name "Workload Network" -VDSwitch "Dswitch"
