@@ -76,7 +76,7 @@ $datacenter = get-datacenter datacenter
 $vmhosts = Get-VMHost
 
 #Set up the content library needed by vSphere with Tanzu
-New-ContentLibrary -Datastore $datastore -name "tkg-cl" -AutomaticSync -SubscriptionUrl "http://wp-content.vmware.com/v2/latest/lib.json" -Confirm:$false
+New-ContentLibrary -Datastore $datastore -name "tkg-cl" -AutomaticSync -SubscriptionUrl "http://wp-content.vmware.com/v2/latest/lib.json" -Confirm:$false  -SslThumbprint "01:8D:FD:13:A6:9E:CA:AC:CB:7C:67:18:C1:47:11:8C:64:91:5D:C9"
 
 $workloadhosts = get-cluster $Cluster | get-vmhost
 New-VDSwitch -Name "Dswitch" -MTU 1600 -NumUplinkPorts 1 -location $datacenter
