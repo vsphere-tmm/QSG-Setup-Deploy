@@ -209,35 +209,35 @@ Write-Host $TextOut
 Write-Host "The file 'configuration.txt' has been written to disk"
 #
 #
-$vSphereWithTanzuParams = @{
-    ClusterName = $Cluster;
-    TanzuvCenterServer = $vc;
-    TanzuvCenterServerUsername = $vc_user;
-    TanzuvCenterServerPassword = $vc_password;
-    TanzuContentLibrary = $tkgcl;
-    ControlPlaneSize = "TINY";
-    MgmtNetworkStartIP = $Dataplane_ip;
-    MgmtNetworkSubnet = $MgmtNetworkCIDR.Subnetmask;
-    MgmtNetworkGateway = $ovfConfig.network.management_gateway.Value;
-    MgmtNetworkDNS = @($ovfConfig.network.nameservers.Value);
-    MgmtNetworkDNSDomain = "";
-    MgmtNetworkNTP = $ntpservers;
-    WorkloadNetworkStartIP = "172.17.36.130";
-    WorkloadNetworkIPCount = 20;
-    WorkloadNetworkSubnet = $WMNetworkCIDR.prefix;
-    WorkloadNetworkGateway = $ovfConfig.network.workload_gateway.Value;
-    WorkloadNetworkDNS = @($ovfConfig.network.nameservers.Value);
-    WorkloadNetworkServiceCIDR = "10.96.0.0/24";
-    StoragePolicyName = $StoragePolicyName;
-    HAProxyVMvCenterServer = $vc;
-    HAProxyVMvCenterUsername = $vc_user;
-    HAProxyVMvCenterPassword = $vc_password;
-    HAProxyVMName = $ovfConfig.network.hostname.Value;
-    HAProxyIPAddress = "172.17.31.116";
-    HAProxyRootPassword = $ovfConfig.loadbalance.haproxy_pwd.Value;
-    HAProxyUsername = $ovfConfig.loadbalance.haproxy_user.Value;
-    HAProxyPassword = $ovfConfig.loadbalance.haproxy_pwd.Value;
-    LoadBalancerStartIP = "172.17.36.2";
-    LoadBalancerIPCount = 125
-}
-New-WorkloadManagement2 @vSphereWithTanzuParams
+# $vSphereWithTanzuParams = @{
+#     ClusterName = $Cluster;
+#     TanzuvCenterServer = $vc;
+#     TanzuvCenterServerUsername = $vc_user;
+#     TanzuvCenterServerPassword = $vc_password;
+#     TanzuContentLibrary = $tkgcl;
+#     ControlPlaneSize = "TINY";
+#     MgmtNetworkStartIP = $Dataplane_ip;
+#     MgmtNetworkSubnet = $MgmtNetworkCIDR.Subnetmask;
+#     MgmtNetworkGateway = $ovfConfig.network.management_gateway.Value;
+#     MgmtNetworkDNS = @($ovfConfig.network.nameservers.Value);
+#     MgmtNetworkDNSDomain = "";
+#     MgmtNetworkNTP = $ntpservers;
+#     WorkloadNetworkStartIP = "172.17.36.130";
+#     WorkloadNetworkIPCount = 20;
+#     WorkloadNetworkSubnet = $WMNetworkCIDR.prefix;
+#     WorkloadNetworkGateway = $ovfConfig.network.workload_gateway.Value;
+#     WorkloadNetworkDNS = @($ovfConfig.network.nameservers.Value);
+#     WorkloadNetworkServiceCIDR = "10.96.0.0/24";
+#     StoragePolicyName = $StoragePolicyName;
+#     HAProxyVMvCenterServer = $vc;
+#     HAProxyVMvCenterUsername = $vc_user;
+#     HAProxyVMvCenterPassword = $vc_password;
+#     HAProxyVMName = $ovfConfig.network.hostname.Value;
+#     HAProxyIPAddress = "172.17.31.116";
+#     HAProxyRootPassword = $ovfConfig.loadbalance.haproxy_pwd.Value;
+#     HAProxyUsername = $ovfConfig.loadbalance.haproxy_user.Value;
+#     HAProxyPassword = $ovfConfig.loadbalance.haproxy_pwd.Value;
+#     LoadBalancerStartIP = "172.17.36.2";
+#     LoadBalancerIPCount = 125
+# }
+# New-WorkloadManagement2 @vSphereWithTanzuParams
