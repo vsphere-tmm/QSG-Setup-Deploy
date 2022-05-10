@@ -81,9 +81,12 @@ After installation you can re-run this script.
 Exit
 }
 #Connect to vCenter. Edit values as appropriate.
-$vc = "10.174.71.178"
+#$vc = "10.174.71.178"
+$vc = "192.168.111.17"
 $vc_user = "administrator@vsphere.local"
-$vc_password = "Admin!23"
+#$vc_password = "Admin!23"
+$vc_password = "VMware1!"
+$vc_password = "VMware1!"
 Connect-VIServer -User $vc_user -Password $vc_password -Server $vc
 $Cluster = Get-Cluster  -Name "vSAN-Cluster"
 $datastore = Get-Datastore -Name  "vsanDatastore"
@@ -117,10 +120,22 @@ New-SpbmStoragePolicy -Name $StoragePolicyName -AnyOfRuleSets (New-SpbmRuleSet -
 # Setup and deploy the HAProxy OVA
 # If you haven't downloaded the OVA you can change $ovfpath accordingly
 #The file is located here: https://github.com/haproxytech/vmware-haproxy#download
+#
+
 $DiskFormat = "Thin"
 $VMname = "haproxy-demo"
 $ovfPath =  "c:\user\Downloads\haproxy-v0.1.8.ova"
 $ovfConfig = Get-OvfConfiguration -Ovf $ovfPath
+
+# Invoke-WebRequest -uri https://cdn.haproxy.com/download/haproxy/vsphere/ova/haproxy-v0.2.0.ova -OutFile /Users/mfoley/Downloads/haproxy-v0.2.0.ova
+
+#
+# $ovfConfig.network.hostname.Value = "haproxy.local"
+# $ovfConfig.network.nameservers.Value = "10.172.212.10"
+# $ovfConfig.network.management_ip.Value = "10.174.71.50/24"
+# $ovfConfig.network.management_gateway.Value = "10.174.71.253"
+# $ovfConfig.network.workload_ip.Value = "10.174.72.50/24"
+# $ovfConfig.network.workload_gateway.Value = "10.174.72.253"
 #
 $ovfConfig.network.hostname.Value = "haproxy.local"
 $ovfConfig.network.nameservers.Value = "10.172.212.10"
@@ -143,7 +158,9 @@ $ovfConfig.appliance.permit_root_login.Value = "True"
 $ovfConfig.loadbalance.dataplane_port.Value = "5556"
 $ovfConfig.loadbalance.haproxy_pwd.Value = "vmware"
 $ovfConfig.loadbalance.haproxy_user.Value = "admin"
+#$ovfConfig.loadbalance.service_ip_range.Value = "10.174.72.208/28"
 $ovfConfig.loadbalance.service_ip_range.Value = "10.174.72.208/28"
+
 #The following are virtual switch portgroup names. Edit accordingly.
 $ovfConfig.NetworkMapping.Management.Value = "VM Network"     #This is the default VSS portgroup created at install time
 $ovfConfig.NetworkMapping.Workload.Value = "Workload Network" #This is the portgroup created earlier
@@ -209,6 +226,7 @@ Write-Host $TextOut
 Write-Host "The file 'configuration.txt' has been written to disk"
 #
 #
+<<<<<<< HEAD:vSphere w-Tanzu QSG full setup-config.ps1
 # $vSphereWithTanzuParams = @{
 #     ClusterName = $Cluster;
 #     TanzuvCenterServer = $vc;
